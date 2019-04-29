@@ -1,0 +1,164 @@
+{
+  "label": "Coinbase",
+  "name": "coinbase",
+  "apiVersion": "v1",
+  "internal": false,
+  "configurationType": "PER_USER",
+  "deployment": {
+    "profiles": [
+      {
+        "name": "default",
+        "label": "Default",
+        "memory": 256,
+        "description": "Default configuration"
+      }
+    ],
+    "allowMultipleInstances": false
+  },
+  "icon48": "https://storage.googleapis.com/static.slingrs.io/platform/endpoints/coinbase.png",
+  "configurationHelpUrl": "/endpoints_coinbase.html#configuration",
+  "status": "ACTIVE",
+  "stores": [],
+  "events": [
+    {
+      "label": "Webhook",
+      "name": "webhook",
+      "description": "Happens when a Coinbase hits the endpoint URL."
+    }
+  ],
+  "functions": [
+    {
+      "label": "GET",
+      "name": "_get"
+    },
+    {
+      "label": "POST",
+      "name": "_post"
+    },
+    {
+      "label": "PUT",
+      "name": "_put"
+    },
+    {
+      "label": "DELETE",
+      "name": "_delete"
+    }
+  ],
+  "scripts": [
+    "coinbase-helpers.js",
+    "functions.js"
+  ],
+  "configuration": [
+    {
+      "name": "clientId",
+      "label": "Client ID",
+      "description": "The client ID used for OAuth",
+      "type": "text",
+      "required": true
+    },
+    {
+      "name": "clientSecret",
+      "label": "Client secret",
+      "description": "The client secret used for OAuth",
+      "type": "text",
+      "required": true
+    },
+    {
+      "name": "wallets",
+      "label": "Wallets",
+      "description": "Indicate if you will request access to all wallets or the user can select only one wallet",
+      "type": "buttonsGroup",
+      "required": true,
+      "defaultValue": "select",
+      "typeOptions": {
+        "allowCustom": true,
+        "possibleValues":[
+          {
+            "label":"Select",
+            "name":"select"
+          },
+          {
+            "label":"All",
+            "name":"all"
+          }
+        ]
+      }
+    },
+    {
+      "name": "sendLimitAmount",
+      "label": "Send Limit Amount",
+      "description": "A limit to the amount of money your application can send from the user’s account",
+      "type": "text",
+      "required": true,
+      "defaultValue": "1",
+      "typeOptions": {
+        "validation": "number"
+      }
+    },
+    {
+      "label": "Send Limit Currency",
+      "name": "sendLimitCurrency",
+      "description": "Supported fiat currency in ISO format, ex. EUR, USD",
+      "type": "text",
+      "required": true,
+      "defaultValue": "USD"
+    },
+    {
+      "label": "Send Limit Period",
+      "name": "sendLimitPeriod",
+      "description": "How often the send money limit expires. Default is month - allowed values are day, month and year",
+      "type": "text",
+      "required": true,
+      "defaultValue": "day"
+    },
+    {
+      "label": "Scope",
+      "name": "scope",
+      "description": "Comma separated list of permissions (scopes) your application requests access to",
+      "type": "text",
+      "required": true,
+      "defaultValue": "wallet:accounts:read,wallet:accounts:update,wallet:accounts:create,wallet:accounts:delete,wallet:addresses:read,wallet:addresses:create,wallet:buys:read,wallet:buys:create,wallet:deposits:read,wallet:deposits:create,wallet:notifications:read,wallet:payment-methods:read,wallet:payment-methods:delete,wallet:payment-methods:limits,wallet:sells:read,wallet:sells:create,wallet:transactions:read,wallet:transactions:send,wallet:transactions:request,wallet:transactions:transfer,wallet:user:read,wallet:user:update,wallet:user:email,wallet:withdrawals:read,wallet:withdrawals:create"
+    },
+    {
+      "name": "oauthCallback",
+      "label": "OAuth callback",
+      "description": "The OAuth callback to configure in your Coinbase App",
+      "type": "label",
+      "value": "config.WEBHOOK_URL+'/authCallback'"
+    },
+    {
+      "name": "webhook",
+      "label": "Webhook URL",
+      "type": "label",
+      "value": "@config.WEBHOOK_URL"
+    }
+  ],
+  "userConfiguration":[
+    {
+      "name": "code",
+      "label": "Token",
+      "type": "text",
+      "visibility": false
+    },
+    {
+      "name": "redirectUri",
+      "label": "Redirect URI",
+      "type": "text",
+      "visibility": false
+    },
+    {
+      "name" : "connectButton",
+      "label" : "Connect to Coinbase",
+      "type" : "button",
+      "typeOptions": {
+        "color": "primary",
+        "icon": "zmdi-play",
+        "action": "var redirectUri = config.WEBHOOK_URL + '/authCallback';\nvar url = 'https://www.coinbase.com/oauth/authorize?response_type=code&client_id='+config.ENDPOINT_CONFIG['clientId']+'&redirect_uri='+redirectUri+'&state='+config.APP+'&account='+config.ENDPOINT_CONFIG['wallets']+'&scope='+config.ENDPOINT_CONFIG['scope']+'&meta[send_limit_amount]='+config.ENDPOINT_CONFIG['sendLimitAmount']+'&meta[send_limit_currency]='+config.ENDPOINT_CONFIG['sendLimitCurrency']+'&meta[send_limit_period]='+config.ENDPOINT_CONFIG['sendLimitPeriod'];\nvar win = window.open(url, 'Authorization page', 'toolbar=no,scrollbars=no,location=no,statusbar=no,menubar=no,resizable=0,width=500,height=600,left='+((screen.width/2)-250)+',top='+((screen.height/2)-250)+',');\n\nvar self = this;\n\nvar intervalFn = function() {\n\t\n\ttry {\n\t\tif (!win || !win.document) {\n\t\t\twindow.clearInterval(pollTimer);\n\t\t}else{\n\t\t\tif (win.document.URL.indexOf('/authCallback') != -1) {\n\t\t\t\twin.innerWidth = 100;\n\t\t\t\twin.innerHeight = 100;\n\t\t\t\twin.screenX = screen.width;\n\t\t\t\twin.screenY = screen.height;\n\t\t\t\twindow.clearInterval(pollTimer);\n\t\t\t\turl = win.document.URL;\n\t\t\t\tvar pos = url.indexOf('code=');\n\t\t\t\tif(pos > -1) {\n\t\t\t\t\tvar token = url.substring(pos + 5);\n\t\t\t\t\tvar limit = token.indexOf(\"&\");\n\t\t\t\t\tif (limit > -1) {\n\t\t\t\t\t\ttoken = token.substring(0, limit);\n\t\t\t\t\t}\n\t\t\t\t\tconfig.code = token;\n\t\t\t\t\tconfig.redirectUri = redirectUri;\n\t\t\t\t\tif (utils.connectToService) {\n\t\t\t\t\t\tutils.connectToService();\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\ttry{win.close();}catch(e){}\n\t\t\t}\n\t\t}\n\t} catch(e) {}\n};\n\nvar pollTimer = window.setInterval(function() {intervalFn.apply(self);}, 500);"
+      },
+      "visibility" : "config.ENDPOINT_STATUS == 'DISCONNECTED'"
+    }
+  ],
+  "userConfigurationButtons":{
+    "connect": false
+  }
+}
